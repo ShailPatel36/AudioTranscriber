@@ -11,10 +11,9 @@ export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
 
-  // Poll for transcription updates every 2 seconds while there's a processing transcription
   const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
-    refetchInterval: transcriptions?.some(t => t.status === "processing") ? 2000 : false,
+    refetchInterval: (data = []) => data.some((t: Transcription) => t.status === "processing") ? 2000 : false,
   });
 
   return (
