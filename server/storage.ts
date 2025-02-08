@@ -1,4 +1,4 @@
-import { users, transcriptions, type User, type InsertUser, type Transcription, type InsertTranscription } from "@shared/schema";
+import { users, transcriptionSettings, transcriptions, type User, type InsertUser, type Transcription, type InsertTranscription, type TranscriptionSettings, type InsertTranscriptionSettings } from "@shared/schema";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
@@ -15,6 +15,10 @@ export interface IStorage {
   createTranscription(transcription: InsertTranscription): Promise<Transcription>;
   getTranscriptionsByUserId(userId: number): Promise<Transcription[]>;
   updateTranscription(id: number, updates: Partial<InsertTranscription>): Promise<Transcription>;
+
+  // New methods for transcription settings
+  getTranscriptionSettings(userId: number): Promise<TranscriptionSettings | undefined>;
+  updateTranscriptionSettings(userId: number, settings: Partial<InsertTranscriptionSettings>): Promise<TranscriptionSettings>;
 
   sessionStore: session.SessionStore;
 }
@@ -72,6 +76,33 @@ export class DatabaseStorage implements IStorage {
     }
 
     return updated;
+  }
+
+  async getTranscriptionSettings(userId: number): Promise<TranscriptionSettings | undefined> {
+    const [settings] = await db
+      .select()
+      .from(transcriptionSettings)
+      .where(eq(transcriptionSettings.userId, userId));
+    return settings;
+  }
+
+  async updateTranscriptionSettings(userId: number, settings: Partial<InsertTranscriptionSettings>): Promise<TranscriptionSettings> {
+    // Try to update existing settings first
+    const [updated] = await db
+      .update(transcriptionSettings)
+      .set(settings)
+      .where(eq(transcriptionSettings.userId, userId))
+      .returning();
+
+    if (updated) return updated;
+
+    // If no settings exist, create new ones
+    const [created] = await db
+      .insert(transcriptionSettings)
+      .values({ ...settings, userId })
+      .returning();
+
+    return created;
   }
 }
 

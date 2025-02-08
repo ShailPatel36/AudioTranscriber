@@ -4,6 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import multer from "multer";
 import { insertTranscriptionSchema } from "@shared/schema";
+import { TranscriptionProviderFactory } from "./transcription/provider-factory";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -15,10 +16,35 @@ const upload = multer({
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
 
+  app.get("/api/transcription-settings", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+      const settings = await storage.getTranscriptionSettings(req.user!.id);
+      res.json(settings || { provider: "openai" }); // Default to OpenAI if no settings
+    } catch (error) {
+      console.error("Failed to fetch transcription settings:", error);
+      res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
+
+  app.post("/api/transcription-settings", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+      const settings = await storage.updateTranscriptionSettings(req.user!.id, req.body);
+      res.json(settings);
+    } catch (error) {
+      console.error("Failed to update transcription settings:", error);
+      res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
   app.post("/api/transcribe/file", upload.single("file"), async (req: Request, res) => {
     try {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
       if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+      const settings = await storage.getTranscriptionSettings(req.user!.id);
+      const provider = settings?.provider || "openai";
 
       const transcription = await storage.createTranscription({
         userId: req.user!.id,
@@ -27,26 +53,36 @@ export function registerRoutes(app: Express): Server {
         status: "processing",
         text: null,
         sourceUrl: null,
+        provider,
       });
 
-      // Simulate transcription processing with a shorter timeout
-      setTimeout(async () => {
+      // Process transcription in the background
+      (async () => {
         try {
-          const fileType = req.file!.originalname.toLowerCase().endsWith('.mp3') ? 'audio' : 'video';
+          const apiKey = provider === "openai" ? settings?.openaiKey : settings?.assemblyaiKey;
+          if (!apiKey) {
+            throw new Error(`API key for ${provider} is not set`);
+          }
+
+          const transcriptionProvider = TranscriptionProviderFactory.getProvider({
+            provider,
+            apiKey,
+          });
+
+          const text = await transcriptionProvider.transcribe(req.file!.buffer, req.file!.originalname);
+
           await storage.updateTranscription(transcription.id, {
             status: "completed",
-            text: `Transcription of ${fileType} file: ${req.file!.originalname}\n\n` +
-                 `This is a simulated transcription of your ${fileType} file. ` +
-                 `In a real implementation, this would be the actual transcribed content from your media file.`,
+            text,
           });
         } catch (error) {
-          console.error("Failed to update transcription:", error);
+          console.error("Failed to process transcription:", error);
           await storage.updateTranscription(transcription.id, {
             status: "failed",
             text: null,
           });
         }
-      }, 5000); // Reduced to 5 seconds
+      })();
 
       res.json(transcription);
     } catch (error) {
@@ -61,6 +97,9 @@ export function registerRoutes(app: Express): Server {
       const { url } = req.body;
       if (!url) return res.status(400).json({ message: "No URL provided" });
 
+      const settings = await storage.getTranscriptionSettings(req.user!.id);
+      const provider = settings?.provider || "openai";
+
       const transcription = await storage.createTranscription({
         userId: req.user!.id,
         sourceType: "youtube",
@@ -68,16 +107,17 @@ export function registerRoutes(app: Express): Server {
         status: "processing",
         text: null,
         fileName: null,
+        provider,
       });
 
-      // Simulate transcription processing with a shorter timeout
+      // Simulate YouTube transcription (you would need to implement actual YouTube processing)
       setTimeout(async () => {
         try {
           await storage.updateTranscription(transcription.id, {
             status: "completed",
             text: `Transcription of YouTube video: ${url}\n\n` +
-                 `This is a simulated transcription of your YouTube video. ` +
-                 `In a real implementation, this would be the actual transcribed content from the video.`,
+                 `This is a simulated transcription. In production, this would download ` +
+                 `the audio from YouTube and process it with the ${provider} provider.`,
           });
         } catch (error) {
           console.error("Failed to update transcription:", error);
@@ -86,7 +126,7 @@ export function registerRoutes(app: Express): Server {
             text: null,
           });
         }
-      }, 5000); // Reduced to 5 seconds
+      }, 5000);
 
       res.json(transcription);
     } catch (error) {

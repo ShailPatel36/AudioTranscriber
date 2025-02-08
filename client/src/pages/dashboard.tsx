@@ -5,7 +5,9 @@ import { Transcription } from "@shared/schema";
 import UploadForm from "@/components/upload-form";
 import TranscriptionHistory from "@/components/transcription-history";
 import TranscriptionResult from "@/components/transcription-result";
+import ProviderSettings from "@/components/provider-settings";
 import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
@@ -39,7 +41,19 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <UploadForm />
+            <Tabs defaultValue="upload">
+              <TabsList>
+                <TabsTrigger value="upload">Upload</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
+              </TabsList>
+              <TabsContent value="upload">
+                <UploadForm />
+              </TabsContent>
+              <TabsContent value="settings">
+                <ProviderSettings />
+              </TabsContent>
+            </Tabs>
+
             {selectedTranscription && (
               <TranscriptionResult transcription={selectedTranscription} />
             )}

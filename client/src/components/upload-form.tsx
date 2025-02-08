@@ -5,14 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import type { TranscriptionSettings } from "@shared/schema";
+
+const PROVIDER_NAMES = {
+  openai: "OpenAI Whisper",
+  assemblyai: "AssemblyAI",
+};
 
 export default function UploadForm() {
   const { toast } = useToast();
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const { data: settings } = useQuery<TranscriptionSettings>({
+    queryKey: ["/api/transcription-settings"],
+  });
 
   const fileForm = useForm({
     defaultValues: {
@@ -85,10 +95,18 @@ export default function UploadForm() {
     },
   });
 
+  const provider = settings?.provider || "openai";
+  const providerName = PROVIDER_NAMES[provider as keyof typeof PROVIDER_NAMES] || provider;
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload Media</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span>Upload Media</span>
+          <span className="text-sm font-normal text-muted-foreground">
+            Using {providerName}
+          </span>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="file">
