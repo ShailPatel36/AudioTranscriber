@@ -1,6 +1,5 @@
 import OpenAI from "openai";
 import { TranscriptionProvider, TranscriptionError } from "./base";
-import { Readable } from "stream";
 import path from "path";
 import fs from "fs";
 import os from "os";
@@ -23,7 +22,7 @@ export class OpenAIProvider implements TranscriptionProvider {
       const file = await fs.promises.readFile(tempPath);
 
       const response = await this.client.audio.transcriptions.create({
-        file: file,
+        file: new File([file], fileName, { type: 'audio/mpeg' }),
         model: "whisper-1",
       });
 

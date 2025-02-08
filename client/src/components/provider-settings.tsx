@@ -15,11 +15,32 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Loader2 } from "lucide-react";
 import type { TranscriptionSettings } from "@shared/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 const PROVIDERS = [
   { id: "openai", name: "OpenAI Whisper" },
   { id: "assemblyai", name: "AssemblyAI" },
 ];
+
+const settingsSchema = z.object({
+  provider: z.enum(["openai", "assemblyai"]),
+  openaiKey: z.string().min(1, "OpenAI API key is required when using OpenAI"),
+  assemblyaiKey: z.string().min(1, "AssemblyAI API key is required when using AssemblyAI"),
+}).refine((data) => {
+  if (data.provider === "openai") {
+    return !!data.openaiKey;
+  }
+  if (data.provider === "assemblyai") {
+    return !!data.assemblyaiKey;
+  }
+  return true;
+}, {
+  message: "API key is required for the selected provider",
+  path: ["provider"],
+});
+
+type SettingsFormData = z.infer<typeof settingsSchema>;
 
 export default function ProviderSettings() {
   const { toast } = useToast();
@@ -28,7 +49,8 @@ export default function ProviderSettings() {
     queryKey: ["/api/transcription-settings"],
   });
 
-  const form = useForm({
+  const form = useForm<SettingsFormData>({
+    resolver: zodResolver(settingsSchema),
     defaultValues: {
       provider: settings?.provider || "openai",
       openaiKey: settings?.openaiKey || "",
@@ -37,7 +59,7 @@ export default function ProviderSettings() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: Partial<TranscriptionSettings>) => {
+    mutationFn: async (data: SettingsFormData) => {
       const res = await apiRequest("POST", "/api/transcription-settings", data);
       return res.json();
     },
@@ -56,6 +78,8 @@ export default function ProviderSettings() {
       });
     },
   });
+
+  const selectedProvider = form.watch("provider");
 
   return (
     <Card>
@@ -96,33 +120,37 @@ export default function ProviderSettings() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="openaiKey"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>OpenAI API Key</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {(selectedProvider === "openai" || selectedProvider === undefined) && (
+              <FormField
+                control={form.control}
+                name="openaiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>OpenAI API Key</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            <FormField
-              control={form.control}
-              name="assemblyaiKey"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>AssemblyAI API Key</FormLabel>
-                  <FormControl>
-                    <Input type="password" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {selectedProvider === "assemblyai" && (
+              <FormField
+                control={form.control}
+                name="assemblyaiKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>AssemblyAI API Key</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <Button
               type="submit"
