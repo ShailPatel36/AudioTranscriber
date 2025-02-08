@@ -15,7 +15,10 @@ export default function Dashboard() {
 
   const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
-    refetchInterval: (data = []) => data.some((t: Transcription) => t.status === "processing") ? 2000 : false,
+    refetchInterval: (data) => {
+      if (!data) return false;
+      return data.some((t) => t.status === "processing") ? 2000 : false;
+    },
   });
 
   return (
