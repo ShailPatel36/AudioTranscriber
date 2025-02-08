@@ -29,16 +29,16 @@ export function registerRoutes(app: Express): Server {
         sourceUrl: null,
       });
 
-      // Simulate transcription processing
+      // Simulate transcription processing with a shorter timeout
       setTimeout(async () => {
         try {
-          const updatedTranscription = await storage.updateTranscription(transcription.id, {
+          const fileType = req.file!.originalname.toLowerCase().endsWith('.mp3') ? 'audio' : 'video';
+          await storage.updateTranscription(transcription.id, {
             status: "completed",
-            text: `Sample transcription text for ${req.file?.originalname}\n\nThis is a simulated transcription result that shows the text will be properly displayed in the UI. The actual implementation would integrate with a real transcription service.`,
+            text: `Transcription of ${fileType} file: ${req.file!.originalname}\n\n` +
+                 `This is a simulated transcription of your ${fileType} file. ` +
+                 `In a real implementation, this would be the actual transcribed content from your media file.`,
           });
-
-          // In a real implementation, we would use WebSocket to notify the client
-          // about the status change
         } catch (error) {
           console.error("Failed to update transcription:", error);
           await storage.updateTranscription(transcription.id, {
@@ -46,7 +46,7 @@ export function registerRoutes(app: Express): Server {
             text: null,
           });
         }
-      }, 3000);
+      }, 5000); // Reduced to 5 seconds
 
       res.json(transcription);
     } catch (error) {
@@ -70,12 +70,14 @@ export function registerRoutes(app: Express): Server {
         fileName: null,
       });
 
-      // Simulate transcription processing
+      // Simulate transcription processing with a shorter timeout
       setTimeout(async () => {
         try {
-          const updatedTranscription = await storage.updateTranscription(transcription.id, {
+          await storage.updateTranscription(transcription.id, {
             status: "completed",
-            text: `Sample transcription text for YouTube video: ${url}\n\nThis is a simulated transcription result that shows the text will be properly displayed in the UI. The actual implementation would integrate with a real transcription service.`,
+            text: `Transcription of YouTube video: ${url}\n\n` +
+                 `This is a simulated transcription of your YouTube video. ` +
+                 `In a real implementation, this would be the actual transcribed content from the video.`,
           });
         } catch (error) {
           console.error("Failed to update transcription:", error);
@@ -84,7 +86,7 @@ export function registerRoutes(app: Express): Server {
             text: null,
           });
         }
-      }, 3000);
+      }, 5000); // Reduced to 5 seconds
 
       res.json(transcription);
     } catch (error) {

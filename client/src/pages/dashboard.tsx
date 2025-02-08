@@ -10,9 +10,11 @@ import { useState } from "react";
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
-  
+
+  // Poll for transcription updates every 2 seconds while there's a processing transcription
   const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
+    refetchInterval: transcriptions?.some(t => t.status === "processing") ? 2000 : false,
   });
 
   return (
@@ -43,7 +45,7 @@ export default function Dashboard() {
               <TranscriptionResult transcription={selectedTranscription} />
             )}
           </div>
-          
+
           <div className="lg:col-span-1">
             <TranscriptionHistory
               transcriptions={transcriptions}
