@@ -6,11 +6,20 @@ import multer from "multer";
 import { insertTranscriptionSchema } from "@shared/schema";
 import { TranscriptionProviderFactory } from "./transcription/provider-factory";
 
+// Configure multer for memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
+  fileFilter: (_req, file, cb) => {
+    // Accept audio files and videos
+    if (file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only audio and video files are allowed.'));
+    }
+  }
 });
 
 export function registerRoutes(app: Express): Server {
@@ -46,6 +55,14 @@ export function registerRoutes(app: Express): Server {
       const settings = await storage.getTranscriptionSettings(req.user!.id);
       const provider = settings?.provider || "openai";
 
+      // Verify API key is set
+      const apiKey = provider === "openai" ? settings?.openaiKey : settings?.assemblyaiKey;
+      if (!apiKey) {
+        return res.status(400).json({ 
+          message: `API key for ${provider} is not set. Please configure it in settings.` 
+        });
+      }
+
       const transcription = await storage.createTranscription({
         userId: req.user!.id,
         sourceType: "file",
@@ -59,35 +76,33 @@ export function registerRoutes(app: Express): Server {
       // Process transcription in the background
       (async () => {
         try {
-          const apiKey = provider === "openai" ? settings?.openaiKey : settings?.assemblyaiKey;
-          if (!apiKey) {
-            throw new Error(`API key for ${provider} is not set`);
-          }
-
           const transcriptionProvider = TranscriptionProviderFactory.getProvider({
             provider,
             apiKey,
           });
 
-          const text = await transcriptionProvider.transcribe(req.file!.buffer, req.file!.originalname);
+          const text = await transcriptionProvider.transcribe(
+            req.file!.buffer,
+            req.file!.originalname
+          );
 
           await storage.updateTranscription(transcription.id, {
             status: "completed",
             text,
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error("Failed to process transcription:", error);
           await storage.updateTranscription(transcription.id, {
             status: "failed",
-            text: null,
+            text: `Error: ${error.message}`,
           });
         }
       })();
 
       res.json(transcription);
-    } catch (error) {
+    } catch (error: any) {
       console.error("File transcription error:", error);
-      res.status(500).json({ message: "Failed to process file" });
+      res.status(500).json({ message: error.message || "Failed to process file" });
     }
   });
 

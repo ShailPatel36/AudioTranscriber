@@ -13,22 +13,26 @@ export class AssemblyAIProvider implements TranscriptionProvider {
 
   async transcribe(audio: Buffer, fileName: string): Promise<string> {
     try {
-      // First, create a temporary URL for the audio file
-      const { url: uploadUrl } = await this.client.files.upload(audio, {
-        fileName: fileName
-      });
+      // Upload the audio file directly
+      const uploadResponse = await this.client.upload(audio);
 
-      // Create and wait for the transcript
-      const transcript = await this.client.transcripts.transcribe({
-        audio_url: uploadUrl,
-        wait: true // This will wait for the transcript to complete
-      });
-
-      if (transcript.status === 'error') {
-        throw new Error(transcript.error || 'Transcription failed');
+      if (!uploadResponse.upload_url) {
+        throw new Error("Failed to upload audio file");
       }
 
-      return transcript.text || '';
+      // Create a transcription
+      const transcript = await this.client.transcribe({
+        audio_url: uploadResponse.upload_url,
+      });
+
+      // Poll for completion
+      const result = await transcript.poll();
+
+      if (result.status === 'error') {
+        throw new Error(result.error || 'Transcription failed');
+      }
+
+      return result.text || '';
     } catch (error: any) {
       throw new TranscriptionError(
         error.message || "Failed to transcribe with AssemblyAI",
