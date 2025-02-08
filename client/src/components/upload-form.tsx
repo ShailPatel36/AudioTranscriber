@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function UploadForm() {
   const { toast } = useToast();
@@ -30,14 +30,18 @@ export default function UploadForm() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      
+
       const res = await fetch("/api/transcribe/file", {
         method: "POST",
         body: formData,
         credentials: "include",
       });
-      
-      if (!res.ok) throw new Error(await res.text());
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(errorData.message || "Failed to upload file");
+      }
+
       return res.json();
     },
     onSuccess: () => {
@@ -51,7 +55,7 @@ export default function UploadForm() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Upload Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -74,7 +78,7 @@ export default function UploadForm() {
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: "Processing Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -104,7 +108,7 @@ export default function UploadForm() {
                 <FormField
                   control={fileForm.control}
                   name="file"
-                  render={({ field: { onChange } }) => (
+                  render={({ field: { onChange }, fieldState: { error } }) => (
                     <FormItem>
                       <FormLabel>Audio/Video File</FormLabel>
                       <FormControl>
@@ -117,6 +121,7 @@ export default function UploadForm() {
                           }}
                         />
                       </FormControl>
+                      {error && <FormMessage>{error.message}</FormMessage>}
                     </FormItem>
                   )}
                 />
@@ -144,12 +149,13 @@ export default function UploadForm() {
                 <FormField
                   control={youtubeForm.control}
                   name="url"
-                  render={({ field }) => (
+                  render={({ field, fieldState: { error } }) => (
                     <FormItem>
                       <FormLabel>YouTube URL</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="https://youtube.com/..." />
                       </FormControl>
+                      {error && <FormMessage>{error.message}</FormMessage>}
                     </FormItem>
                   )}
                 />
