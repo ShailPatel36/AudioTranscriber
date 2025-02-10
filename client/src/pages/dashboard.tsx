@@ -7,7 +7,7 @@ import TranscriptionHistory from "@/components/transcription-history";
 import TranscriptionResult from "@/components/transcription-result";
 import ProviderSettings from "@/components/provider-settings";
 import QuickHelpModal from "@/components/quick-help-modal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Dashboard() {
@@ -21,6 +21,23 @@ export default function Dashboard() {
       return data.some((t) => t.status === "processing") ? 2000 : false;
     },
   });
+
+  // Sort transcriptions by creation date (newest first) and automatically select the newest one
+  const sortedTranscriptions = [...transcriptions].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  // Auto-select the newest transcription when the list updates
+  useEffect(() => {
+    if (sortedTranscriptions.length > 0) {
+      // Only auto-select if there's no selection or if a newer transcription appears
+      if (!selectedTranscription || 
+          new Date(sortedTranscriptions[0].createdAt).getTime() > 
+          new Date(selectedTranscription.createdAt).getTime()) {
+        setSelectedTranscription(sortedTranscriptions[0]);
+      }
+    }
+  }, [sortedTranscriptions]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,7 +83,7 @@ export default function Dashboard() {
 
           <div className="lg:col-span-1">
             <TranscriptionHistory
-              transcriptions={transcriptions}
+              transcriptions={sortedTranscriptions}
               onSelect={setSelectedTranscription}
               selectedId={selectedTranscription?.id}
             />
