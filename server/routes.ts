@@ -76,6 +76,10 @@ export function registerRoutes(app: Express): Server {
       const settings = await storage.getTranscriptionSettings(req.user!.id);
       const provider = settings?.provider || "openai";
 
+      // Get translation options from request body
+      const translateTo = req.body.translateTo;
+      const translateEnabled = !!translateTo;
+
       // Verify API key is set
       const apiKey = provider === "openai" ? settings?.openaiKey : settings?.assemblyaiKey;
       if (!apiKey && provider !== "commonvoice") {
@@ -85,13 +89,18 @@ export function registerRoutes(app: Express): Server {
       }
 
       console.log(`Using transcription provider: ${provider}`);
+      if (translateEnabled) {
+        console.log(`Translation requested to: ${translateTo}`);
+      }
 
       const transcription = await storage.createTranscription({
         userId: req.user!.id,
         sourceType: "file",
         fileName: req.file.originalname,
         status: "processing",
-        text: "Starting transcription process...",
+        text: translateEnabled ? 
+          `Starting transcription and translation to ${translateTo}...` :
+          "Starting transcription process...",
         sourceUrl: null,
         provider,
       });
@@ -119,12 +128,20 @@ export function registerRoutes(app: Express): Server {
 
           // Update status before starting transcription
           await storage.updateTranscription(transcription.id, {
-            text: "Transcribing audio...",
+            text: translateEnabled ? 
+              "Transcribing and translating audio..." :
+              "Transcribing audio...",
           });
 
           const text = await transcriptionProvider.transcribe(
             audioBuffer,
-            req.file!.originalname
+            req.file!.originalname,
+            {
+              translate: translateEnabled ? {
+                enabled: true,
+                targetLanguage: translateTo
+              } : undefined
+            }
           );
 
           // Split text into segments for progress updates
