@@ -51,12 +51,29 @@ export default function Dashboard() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
+            {/* Username with icon */}
             <span className="text-muted-foreground flex items-center">
               <Wand2 className="w-4 h-4 mr-2" />
               {user?.username}
             </span>
-            <QuickHelpModal />
+
+            {/* Settings button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => document.getElementById('settings-tab')?.click()}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+
+            {/* Theme toggle */}
             <ThemeToggle />
+
+            {/* Help modal */}
+            <QuickHelpModal />
+
+            {/* Logout button */}
             <Button
               variant="outline"
               size="sm"
@@ -89,7 +106,7 @@ export default function Dashboard() {
                     <Mic className="w-4 h-4" />
                     Upload
                   </TabsTrigger>
-                  <TabsTrigger value="settings" className="flex items-center gap-2">
+                  <TabsTrigger value="settings" id="settings-tab" className="flex items-center gap-2">
                     <Settings className="w-4 h-4" />
                     Settings
                   </TabsTrigger>
