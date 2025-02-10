@@ -13,17 +13,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
+  const [currentTranscription, setCurrentTranscription] = useState<Transcription | null>(null);
 
   const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
     refetchInterval: (data) => {
-      // Keep polling if any transcription is in processing state
       if (!Array.isArray(data)) return false;
       return data.some((t) => t.status === "processing") ? 2000 : false;
     },
-    // Prevent automatic background refetches during file uploads
-    staleTime: 0,
-    cacheTime: Infinity,
   });
 
   // Sort transcriptions by creation date (newest first)
@@ -31,14 +28,14 @@ export default function Dashboard() {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  // Auto-select the newest transcription when the list updates
+  // Update current transcription when a new one is added
   useEffect(() => {
     if (sortedTranscriptions.length > 0) {
-      // Only auto-select if there's no selection or if a newer transcription appears
-      if (!selectedTranscription || 
-          new Date(sortedTranscriptions[0].createdAt).getTime() > 
-          new Date(selectedTranscription.createdAt).getTime()) {
-        setSelectedTranscription(sortedTranscriptions[0]);
+      const newest = sortedTranscriptions[0];
+      if (!currentTranscription || 
+          new Date(newest.createdAt).getTime() > 
+          new Date(currentTranscription.createdAt).getTime()) {
+        setCurrentTranscription(newest);
       }
     }
   }, [sortedTranscriptions]);
@@ -80,8 +77,20 @@ export default function Dashboard() {
               </TabsContent>
             </Tabs>
 
-            {selectedTranscription && (
-              <TranscriptionResult transcription={selectedTranscription} />
+            {/* Show current transcription */}
+            {currentTranscription && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Current Transcription</h2>
+                <TranscriptionResult transcription={currentTranscription} />
+              </div>
+            )}
+
+            {/* Show selected transcription if different from current */}
+            {selectedTranscription && selectedTranscription.id !== currentTranscription?.id && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Selected Transcription</h2>
+                <TranscriptionResult transcription={selectedTranscription} />
+              </div>
             )}
           </div>
 
