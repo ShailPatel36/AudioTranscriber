@@ -13,10 +13,10 @@ export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
 
-  const { data: transcriptions = [] } = useQuery<Transcription[]>({
+const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
     refetchInterval: (data) => {
-      if (!data) return false;
+      if (!Array.isArraydata) return false;
       return data.some((t) => t.status === "processing") ? 2000 : false;
     },
   });
