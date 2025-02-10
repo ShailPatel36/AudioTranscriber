@@ -17,12 +17,16 @@ export default function Dashboard() {
   const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
     refetchInterval: (data) => {
+      // Keep polling if any transcription is in processing state
       if (!Array.isArray(data)) return false;
       return data.some((t) => t.status === "processing") ? 2000 : false;
     },
+    // Prevent automatic background refetches during file uploads
+    staleTime: 0,
+    cacheTime: Infinity,
   });
 
-  // Sort transcriptions by creation date (newest first) and automatically select the newest one
+  // Sort transcriptions by creation date (newest first)
   const sortedTranscriptions = [...transcriptions].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );

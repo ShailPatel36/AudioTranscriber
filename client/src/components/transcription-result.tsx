@@ -16,8 +16,26 @@ interface TranscriptionResultProps {
   transcription: Transcription;
 }
 
+function formatTranscriptionText(text: string | null): string[] {
+  if (!text) return [];
+
+  // Split text into paragraphs based on double line breaks or multiple line breaks
+  return text
+    .split(/\n\s*\n/)
+    .map(paragraph => paragraph.trim())
+    .filter(paragraph => paragraph.length > 0);
+}
+
 export default function TranscriptionResult({ transcription }: TranscriptionResultProps) {
   const [messageIndex, setMessageIndex] = useState(0);
+  const [formattedText, setFormattedText] = useState<string[]>([]);
+
+  // Format text when transcription changes
+  useEffect(() => {
+    if (transcription.text) {
+      setFormattedText(formatTranscriptionText(transcription.text));
+    }
+  }, [transcription.text]);
 
   // Cycle through messages every 3 seconds during processing
   useEffect(() => {
@@ -85,8 +103,12 @@ export default function TranscriptionResult({ transcription }: TranscriptionResu
           </div>
         ) : (
           <ScrollArea className="h-[400px]">
-            <div className="prose prose-sm max-w-none">
-              <p>{transcription.text}</p>
+            <div className="prose prose-sm max-w-none space-y-4">
+              {formattedText.map((paragraph, index) => (
+                <p key={index} className="leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
             </div>
           </ScrollArea>
         )}
