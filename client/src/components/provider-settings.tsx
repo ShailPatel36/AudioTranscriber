@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -24,10 +25,31 @@ const PROVIDERS = [
   { id: "commonvoice", name: "Mozilla CommonVoice (Free)" },
 ];
 
+const LANGUAGES = [
+  { code: "auto", name: "Auto Detect" },
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "pt", name: "Portuguese" },
+  { code: "nl", name: "Dutch" },
+  { code: "hi", name: "Hindi" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "zh", name: "Chinese" },
+];
+
 const settingsSchema = z.object({
   provider: z.enum(["openai", "assemblyai", "commonvoice"] as const),
   openaiKey: z.string().optional(),
   assemblyaiKey: z.string().optional(),
+  defaultLanguage: z.string().optional(),
+  enableSpeakerDiarization: z.boolean().optional(),
+  enableTimestamps: z.boolean().optional(),
+  enableLanguageDetection: z.boolean().optional(),
+  enableNoiseReduction: z.boolean().optional(),
+  enableConfidenceScores: z.boolean().optional(),
 }).refine((data) => {
   if (data.provider === "openai") {
     return !!data.openaiKey;
@@ -56,6 +78,12 @@ export default function ProviderSettings() {
       provider: settings?.provider as "openai" | "assemblyai" | "commonvoice" || "openai",
       openaiKey: settings?.openaiKey || "",
       assemblyaiKey: settings?.assemblyaiKey || "",
+      defaultLanguage: settings?.defaultLanguage || "auto",
+      enableSpeakerDiarization: settings?.enableSpeakerDiarization || false,
+      enableTimestamps: settings?.enableTimestamps || false,
+      enableLanguageDetection: settings?.enableLanguageDetection || false,
+      enableNoiseReduction: settings?.enableNoiseReduction || false,
+      enableConfidenceScores: settings?.enableConfidenceScores || false,
     },
   });
 
@@ -91,67 +119,205 @@ export default function ProviderSettings() {
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((data) => updateMutation.mutate(data))}
-            className="space-y-4"
+            className="space-y-6"
           >
-            <FormField
-              control={form.control}
-              name="provider"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Transcription Provider</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a provider" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {PROVIDERS.map((provider) => (
-                        <SelectItem key={provider.id} value={provider.id}>
-                          {provider.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="provider"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Transcription Provider</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a provider" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PROVIDERS.map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {selectedProvider === "openai" && (
+                <FormField
+                  control={form.control}
+                  name="openaiKey"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>OpenAI API Key</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
 
-            {selectedProvider === "openai" && (
+              {selectedProvider === "assemblyai" && (
+                <FormField
+                  control={form.control}
+                  name="assemblyaiKey"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>AssemblyAI API Key</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               <FormField
                 control={form.control}
-                name="openaiKey"
+                name="defaultLanguage"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>OpenAI API Key</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
+                    <FormLabel>Default Language</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a language" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {LANGUAGES.map((lang) => (
+                          <SelectItem key={lang.code} value={lang.code}>
+                            {lang.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </FormItem>
                 )}
               />
-            )}
 
-            {selectedProvider === "assemblyai" && (
-              <FormField
-                control={form.control}
-                name="assemblyaiKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>AssemblyAI API Key</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="font-medium mb-2">Advanced Features</h3>
+
+                <FormField
+                  control={form.control}
+                  name="enableSpeakerDiarization"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div>
+                        <FormLabel>Speaker Diarization</FormLabel>
+                        <FormDescription>
+                          Identify and label different speakers in the audio
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="enableTimestamps"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div>
+                        <FormLabel>Word-Level Timestamps</FormLabel>
+                        <FormDescription>
+                          Add precise timing information for each word
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="enableLanguageDetection"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div>
+                        <FormLabel>Auto Language Detection</FormLabel>
+                        <FormDescription>
+                          Automatically detect the spoken language
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="enableNoiseReduction"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div>
+                        <FormLabel>Noise Reduction</FormLabel>
+                        <FormDescription>
+                          Reduce background noise for better accuracy
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="enableConfidenceScores"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between">
+                      <div>
+                        <FormLabel>Confidence Scores</FormLabel>
+                        <FormDescription>
+                          Show confidence level for each transcribed segment
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
             <Button
               type="submit"

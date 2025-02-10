@@ -1,4 +1,4 @@
-import { TranscriptionProvider, TranscriptionConfig } from "./providers/base";
+import { TranscriptionProvider, TranscriptionConfig, TranscriptionFeature } from "./providers/base";
 import { OpenAIProvider } from "./providers/openai";
 import { AssemblyAIProvider } from "./providers/assemblyai";
 import { CommonVoiceProvider } from "./providers/commonvoice";
@@ -36,5 +36,15 @@ export class TranscriptionProviderFactory {
 
   static getAvailableProviders(): string[] {
     return ["openai", "assemblyai", "commonvoice"];
+  }
+
+  static getProviderFeatures(provider: string): TranscriptionFeature[] {
+    // Get supported features for each provider
+    const instance = this.getProvider({ provider });
+    if (!instance.supportsFeature) return [];
+
+    return Object.values(TranscriptionFeature).filter(feature => 
+      instance.supportsFeature?.(feature)
+    );
   }
 }
