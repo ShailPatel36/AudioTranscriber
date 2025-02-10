@@ -21,12 +21,13 @@ import { z } from "zod";
 const PROVIDERS = [
   { id: "openai", name: "OpenAI Whisper" },
   { id: "assemblyai", name: "AssemblyAI" },
+  { id: "commonvoice", name: "Mozilla CommonVoice (Free)" },
 ];
 
 const settingsSchema = z.object({
-  provider: z.enum(["openai", "assemblyai"]),
-  openaiKey: z.string().min(1, "OpenAI API key is required when using OpenAI"),
-  assemblyaiKey: z.string().min(1, "AssemblyAI API key is required when using AssemblyAI"),
+  provider: z.enum(["openai", "assemblyai", "commonvoice"]),
+  openaiKey: z.string().min(1, "OpenAI API key is required when using OpenAI").optional(),
+  assemblyaiKey: z.string().min(1, "AssemblyAI API key is required when using AssemblyAI").optional(),
 }).refine((data) => {
   if (data.provider === "openai") {
     return !!data.openaiKey;
@@ -151,6 +152,23 @@ export default function ProviderSettings() {
                 )}
               />
             )}
+
+            {selectedProvider === "commonvoice" && (
+              <FormField
+                control={form.control}
+                name="commonvoiceKey"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CommonVoice API Key</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
 
             <Button
               type="submit"

@@ -61,7 +61,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertTranscriptionSettingsSchema = createInsertSchema(transcriptionSettings)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
-    provider: z.enum(["openai", "assemblyai"]),
+    provider: z.enum(["openai", "assemblyai", "commonvoice"]),
     openaiKey: z.string().optional(),
     assemblyaiKey: z.string().optional(),
   });

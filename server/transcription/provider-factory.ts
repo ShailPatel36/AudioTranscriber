@@ -1,6 +1,7 @@
 import { TranscriptionProvider, TranscriptionConfig } from "./providers/base";
 import { OpenAIProvider } from "./providers/openai";
 import { AssemblyAIProvider } from "./providers/assemblyai";
+import { CommonVoiceProvider } from "./providers/commonvoice";
 
 export class TranscriptionProviderFactory {
   private static providers: Record<string, TranscriptionProvider> = {};
@@ -23,6 +24,9 @@ export class TranscriptionProviderFactory {
         if (!apiKey) throw new Error("AssemblyAI API key is required");
         this.providers[provider] = new AssemblyAIProvider(apiKey);
         break;
+      case "commonvoice":
+        this.providers[provider] = new CommonVoiceProvider();
+        break;
       default:
         throw new Error(`Unsupported transcription provider: ${provider}`);
     }
@@ -31,6 +35,6 @@ export class TranscriptionProviderFactory {
   }
 
   static getAvailableProviders(): string[] {
-    return ["openai", "assemblyai"];
+    return ["openai", "assemblyai", "commonvoice"];
   }
 }
