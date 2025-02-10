@@ -1,9 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Transcription } from "@shared/schema";
-import { Loader2, Download } from "lucide-react";
+import { Loader2, Download, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
+import { formatTranscriptionForExport, type ExportFormat } from "@/lib/export-utils";
 
 const PROCESSING_MESSAGES = [
   "Converting your media to text...",
@@ -29,6 +36,7 @@ function formatTranscriptionText(text: string | null): string[] {
 export default function TranscriptionResult({ transcription }: TranscriptionResultProps) {
   const [messageIndex, setMessageIndex] = useState(0);
   const [formattedText, setFormattedText] = useState<string[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Format text when transcription changes
   useEffect(() => {
@@ -48,23 +56,39 @@ export default function TranscriptionResult({ transcription }: TranscriptionResu
     }
   }, [transcription.status]);
 
-  const handleExport = () => {
+  const handleExport = async (format: ExportFormat) => {
     if (!transcription.text) return;
 
-    // Create blob with transcription text
-    const blob = new Blob([transcription.text], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
+    try {
+      setIsExporting(true);
 
-    // Create download link
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `transcription-${transcription.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
+      const blob = await formatTranscriptionForExport(
+        transcription.text,
+        format,
+        {
+          title: transcription.sourceType === "youtube" 
+            ? transcription.sourceUrl 
+            : transcription.fileName,
+          date: new Date(transcription.createdAt)
+        }
+      );
 
-    // Cleanup
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transcription-${transcription.id}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -72,15 +96,35 @@ export default function TranscriptionResult({ transcription }: TranscriptionResu
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Transcription Result</CardTitle>
         {transcription.status === "completed" && transcription.text && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleExport}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline"
+                size="sm"
+                disabled={isExporting}
+                className="flex items-center gap-2"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Export
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("txt")}>
+                Plain Text (.txt)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("srt")}>
+                Subtitles (.srt)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                PDF Document (.pdf)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </CardHeader>
       <CardContent>
