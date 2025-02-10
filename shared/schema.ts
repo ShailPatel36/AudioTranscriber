@@ -21,7 +21,7 @@ export const transcriptionSettings = pgTable("transcription_settings", {
   provider: text("provider").notNull().default("openai"),
   openaiKey: text("openai_key"),
   assemblyaiKey: text("assemblyai_key"),
-  defaultLanguage: text("default_language"),
+  defaultLanguage: text("default_language").default("auto"),
   enableSpeakerDiarization: boolean("enable_speaker_diarization").default(false),
   enableTimestamps: boolean("enable_timestamps").default(false),
   enableLanguageDetection: boolean("enable_language_detection").default(false),
