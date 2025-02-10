@@ -10,6 +10,7 @@ import QuickHelpModal from "@/components/quick-help-modal";
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mic, Settings, History, LogOut, Wand2 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
@@ -54,6 +55,7 @@ export default function Dashboard() {
               <Wand2 className="w-4 h-4 mr-2" />
               {user?.username}
             </span>
+            <ThemeToggle />
             <QuickHelpModal />
             <Button
               variant="outline"
