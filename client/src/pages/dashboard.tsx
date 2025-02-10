@@ -55,8 +55,8 @@ export default function Dashboard() {
               <Wand2 className="w-4 h-4 mr-2" />
               {user?.username}
             </span>
-            <ThemeToggle />
             <QuickHelpModal />
+            <ThemeToggle />
             <Button
               variant="outline"
               size="sm"
