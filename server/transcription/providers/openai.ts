@@ -13,31 +13,38 @@ export class OpenAIProvider implements TranscriptionProvider {
   }
 
   async transcribe(audio: Buffer, fileName: string): Promise<string> {
+    let tempPath: string | null = null;
+
     try {
       // Create a temporary file with a proper extension
       const tempDir = os.tmpdir();
-      const tempPath = path.join(tempDir, `temp-${Date.now()}-${fileName}`);
+      tempPath = path.join(tempDir, `temp-${Date.now()}-${fileName}`);
 
-      // Write the buffer to a temporary file
+      console.log("OpenAI: Writing audio to temporary file:", tempPath);
       await fs.promises.writeFile(tempPath, audio);
 
-      try {
-        const response = await this.client.audio.transcriptions.create({
-          file: await fs.promises.readFile(tempPath),
-          model: "whisper-1",
-        });
+      // Create a ReadStream from the temporary file
+      const fileStream = fs.createReadStream(tempPath);
 
-        return response.text;
-      } finally {
-        // Clean up temp file in a finally block to ensure it's always deleted
-        await fs.promises.unlink(tempPath).catch(console.error);
-      }
+      console.log("OpenAI: Calling Whisper API...");
+      const response = await this.client.audio.transcriptions.create({
+        file: fileStream,
+        model: "whisper-1",
+      });
+
+      console.log("OpenAI: Transcription successful");
+      return response.text;
     } catch (error: any) {
       console.error("OpenAI transcription error:", error);
       throw new TranscriptionError(
         error.message || "Failed to transcribe with OpenAI",
         this.name
       );
+    } finally {
+      // Clean up temp file
+      if (tempPath) {
+        await fs.promises.unlink(tempPath).catch(console.error);
+      }
     }
   }
 }

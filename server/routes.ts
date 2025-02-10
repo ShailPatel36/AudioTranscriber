@@ -52,16 +52,20 @@ export function registerRoutes(app: Express): Server {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
       if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
+      console.log(`Processing file upload: ${req.file.originalname}`);
+
       const settings = await storage.getTranscriptionSettings(req.user!.id);
       const provider = settings?.provider || "openai";
 
       // Verify API key is set
       const apiKey = provider === "openai" ? settings?.openaiKey : settings?.assemblyaiKey;
-      if (!apiKey) {
+      if (!apiKey && provider !== "commonvoice") {
         return res.status(400).json({ 
           message: `API key for ${provider} is not set. Please configure it in settings.` 
         });
       }
+
+      console.log(`Using transcription provider: ${provider}`);
 
       const transcription = await storage.createTranscription({
         userId: req.user!.id,
@@ -76,20 +80,28 @@ export function registerRoutes(app: Express): Server {
       // Process transcription in the background
       (async () => {
         try {
+          console.log(`Starting transcription for file: ${req.file!.originalname}`);
+
           const transcriptionProvider = TranscriptionProviderFactory.getProvider({
             provider,
             apiKey,
           });
+
+          console.log("Transcription provider initialized, starting transcription...");
 
           const text = await transcriptionProvider.transcribe(
             req.file!.buffer,
             req.file!.originalname
           );
 
+          console.log("Transcription completed successfully, updating database...");
+
           await storage.updateTranscription(transcription.id, {
             status: "completed",
             text,
           });
+
+          console.log(`Transcription ${transcription.id} completed and saved`);
         } catch (error: any) {
           console.error("Failed to process transcription:", error);
           await storage.updateTranscription(transcription.id, {
