@@ -6,6 +6,7 @@ import multer from "multer";
 import { insertTranscriptionSchema } from "@shared/schema";
 import { TranscriptionProviderFactory } from "./transcription/provider-factory";
 import { YouTubeService } from "./transcription/youtube-service";
+import { MediaConverter } from "./transcription/media-converter";
 
 // Configure multer for memory storage
 const upload = multer({
@@ -14,11 +15,27 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (_req, file, cb) => {
-    // Accept audio files and videos
-    if (file.mimetype.startsWith('audio/') || file.mimetype.startsWith('video/')) {
+    // List of supported MIME types
+    const supportedMimeTypes = [
+      // Audio formats
+      'audio/mpeg',        // .mp3
+      'audio/wav',         // .wav
+      'audio/m4a',         // .m4a
+      'audio/aac',         // .aac
+      'audio/ogg',         // .ogg
+      'audio/x-flac',      // .flac
+      // Video formats
+      'video/mp4',         // .mp4
+      'video/quicktime',   // .mov
+      'video/x-msvideo',   // .avi
+      'video/x-matroska',  // .mkv
+      'video/webm',        // .webm
+    ];
+
+    if (supportedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only audio and video files are allowed.'));
+      cb(new Error(`Unsupported file type: ${file.mimetype}. Only audio and video files are allowed.`));
     }
   }
 });
@@ -84,6 +101,17 @@ export function registerRoutes(app: Express): Server {
         try {
           console.log(`Starting transcription for file: ${req.file!.originalname}`);
 
+          // Update status to show conversion progress
+          await storage.updateTranscription(transcription.id, {
+            text: "Converting media file to compatible format...",
+          });
+
+          // Convert file to MP3 format
+          const audioBuffer = await MediaConverter.extractAudio(
+            req.file!.buffer,
+            req.file!.originalname
+          );
+
           const transcriptionProvider = TranscriptionProviderFactory.getProvider({
             provider,
             apiKey,
@@ -95,7 +123,7 @@ export function registerRoutes(app: Express): Server {
           });
 
           const text = await transcriptionProvider.transcribe(
-            req.file!.buffer,
+            audioBuffer,
             req.file!.originalname
           );
 
