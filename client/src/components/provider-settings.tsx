@@ -25,9 +25,9 @@ const PROVIDERS = [
 ];
 
 const settingsSchema = z.object({
-  provider: z.enum(["openai", "assemblyai", "commonvoice"]),
-  openaiKey: z.string().min(1, "OpenAI API key is required when using OpenAI").optional(),
-  assemblyaiKey: z.string().min(1, "AssemblyAI API key is required when using AssemblyAI").optional(),
+  provider: z.enum(["openai", "assemblyai", "commonvoice"] as const),
+  openaiKey: z.string().optional(),
+  assemblyaiKey: z.string().optional(),
 }).refine((data) => {
   if (data.provider === "openai") {
     return !!data.openaiKey;
@@ -53,7 +53,7 @@ export default function ProviderSettings() {
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      provider: settings?.provider || "openai",
+      provider: settings?.provider as "openai" | "assemblyai" | "commonvoice" || "openai",
       openaiKey: settings?.openaiKey || "",
       assemblyaiKey: settings?.assemblyaiKey || "",
     },
@@ -121,7 +121,7 @@ export default function ProviderSettings() {
               )}
             />
 
-            {(selectedProvider === "openai" || selectedProvider === undefined) && (
+            {selectedProvider === "openai" && (
               <FormField
                 control={form.control}
                 name="openaiKey"
@@ -152,23 +152,6 @@ export default function ProviderSettings() {
                 )}
               />
             )}
-
-            {selectedProvider === "commonvoice" && (
-              <FormField
-                control={form.control}
-                name="commonvoiceKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CommonVoice API Key</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
 
             <Button
               type="submit"
