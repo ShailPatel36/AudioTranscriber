@@ -57,28 +57,41 @@ export default function QuickHelpModal() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" className="hover:bg-accent">
           <HelpCircle className="h-5 w-5" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Quick Help Guide</DialogTitle>
+        <DialogHeader className="pb-4 border-b">
+          <DialogTitle className="text-2xl">Quick Help Guide</DialogTitle>
           <DialogDescription>
             Common transcription issues and their solutions
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="max-h-[60vh] pr-4">
-          <div className="space-y-6">
+        <ScrollArea className="mt-4 max-h-[60vh] pr-6">
+          <div className="space-y-8">
             {COMMON_ISSUES.map((issue, index) => (
-              <div key={index} className="space-y-2">
-                <h3 className="text-lg font-semibold">{issue.title}</h3>
-                <p className="text-muted-foreground">{issue.description}</p>
-                <ul className="list-disc pl-6 space-y-1">
+              <div 
+                key={index} 
+                className="p-4 rounded-lg bg-card border"
+              >
+                <h3 className="text-xl font-semibold mb-2 text-primary">
+                  {issue.title}
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  {issue.description}
+                </p>
+                <div className="space-y-2">
                   {issue.solutions.map((solution, sIndex) => (
-                    <li key={sIndex} className="text-sm">{solution}</li>
+                    <div 
+                      key={sIndex} 
+                      className="flex items-start gap-2 text-sm"
+                    >
+                      <span className="text-primary mt-1">•</span>
+                      <span>{solution}</span>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             ))}
           </div>
