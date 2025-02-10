@@ -3,12 +3,33 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import type { Transcription } from "@shared/schema";
 import { Loader2, Download } from "lucide-react";
+import { useEffect, useState } from "react";
+
+const PROCESSING_MESSAGES = [
+  "Converting your media to text...",
+  "Using AI to understand the content...",
+  "Almost there, finalizing transcription...",
+  "Processing audio data...",
+];
 
 interface TranscriptionResultProps {
   transcription: Transcription;
 }
 
 export default function TranscriptionResult({ transcription }: TranscriptionResultProps) {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  // Cycle through messages every 3 seconds during processing
+  useEffect(() => {
+    if (transcription.status === "processing") {
+      const interval = setInterval(() => {
+        setMessageIndex((current) => (current + 1) % PROCESSING_MESSAGES.length);
+      }, 3000);
+
+      return () => clearInterval(interval);
+    }
+  }, [transcription.status]);
+
   const handleExport = () => {
     if (!transcription.text) return;
 
@@ -46,9 +67,17 @@ export default function TranscriptionResult({ transcription }: TranscriptionResu
       </CardHeader>
       <CardContent>
         {transcription.status === "processing" ? (
-          <div className="py-8 flex flex-col items-center justify-center text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin mb-4" />
-            <p>Processing your media...</p>
+          <div className="py-12 flex flex-col items-center justify-center text-muted-foreground">
+            <div className="relative">
+              <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+              <Loader2 className="h-12 w-12 animate-spin relative" />
+            </div>
+            <p className="mt-8 text-center animate-pulse">
+              {PROCESSING_MESSAGES[messageIndex]}
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground/70">
+              This may take a few minutes depending on the file size
+            </p>
           </div>
         ) : transcription.status === "failed" ? (
           <div className="py-8 text-center text-destructive">
