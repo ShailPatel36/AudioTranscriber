@@ -11,11 +11,26 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Mic, Settings, History, LogOut, Wand2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
   const [currentTranscription, setCurrentTranscription] = useState<Transcription | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
@@ -57,21 +72,36 @@ export default function Dashboard() {
               {user?.username}
             </span>
 
-            {/* Settings button */}
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => document.getElementById('settings-tab')?.click()}
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-
-            {/* Theme toggle */}
-            <ThemeToggle />
-
-            {/* Help modal */}
+            {/* Quick Help Modal */}
             <QuickHelpModal />
+
+            {/* Settings Dropdown */}
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DialogTrigger asChild>
+                    <DropdownMenuItem>
+                      Provider Settings
+                    </DropdownMenuItem>
+                  </DialogTrigger>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <ThemeToggle />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Provider Settings</DialogTitle>
+                </DialogHeader>
+                <ProviderSettings />
+              </DialogContent>
+            </Dialog>
 
             {/* Logout button */}
             <Button
@@ -99,25 +129,9 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
+            {/* Upload Form */}
             <div className="bg-card rounded-lg shadow-lg border p-6">
-              <Tabs defaultValue="upload" className="space-y-6">
-                <TabsList className="grid grid-cols-2 gap-4 bg-muted p-1">
-                  <TabsTrigger value="upload" className="flex items-center gap-2">
-                    <Mic className="w-4 h-4" />
-                    Upload
-                  </TabsTrigger>
-                  <TabsTrigger value="settings" id="settings-tab" className="flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="upload" className="space-y-4">
-                  <UploadForm />
-                </TabsContent>
-                <TabsContent value="settings">
-                  <ProviderSettings />
-                </TabsContent>
-              </Tabs>
+              <UploadForm />
             </div>
 
             {/* Current Transcription */}
