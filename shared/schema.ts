@@ -22,11 +22,6 @@ export const transcriptionSettings = pgTable("transcription_settings", {
   openaiKey: text("openai_key"),
   assemblyaiKey: text("assemblyai_key"),
   defaultLanguage: text("default_language").default("auto"),
-  enableSpeakerDiarization: boolean("enable_speaker_diarization").default(false),
-  enableTimestamps: boolean("enable_timestamps").default(false),
-  enableLanguageDetection: boolean("enable_language_detection").default(false),
-  enableNoiseReduction: boolean("enable_noise_reduction").default(false),
-  enableConfidenceScores: boolean("enable_confidence_scores").default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -89,11 +84,6 @@ export const insertTranscriptionSettingsSchema = createInsertSchema(transcriptio
     openaiKey: z.string().optional(),
     assemblyaiKey: z.string().optional(),
     defaultLanguage: z.string().optional(),
-    enableSpeakerDiarization: z.boolean().optional(),
-    enableTimestamps: z.boolean().optional(),
-    enableLanguageDetection: z.boolean().optional(),
-    enableNoiseReduction: z.boolean().optional(),
-    enableConfidenceScores: z.boolean().optional(),
   });
 
 export const insertTranscriptionSchema = createInsertSchema(transcriptions)
