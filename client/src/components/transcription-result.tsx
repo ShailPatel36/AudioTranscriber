@@ -11,6 +11,8 @@ import type { Transcription } from "@shared/schema";
 import { Loader2, Download, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatTranscriptionForExport, type ExportFormat } from "@/lib/export-utils";
+import { useQuery } from "@tanstack/react-query";
+import type { TranscriptionSegment } from "@shared/schema";
 
 const PROCESSING_MESSAGES = [
   "Converting your media to text...",
@@ -38,12 +40,32 @@ export default function TranscriptionResult({ transcription }: TranscriptionResu
   const [formattedText, setFormattedText] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Format text when transcription changes
+  // Fetch segments if available
+  const { data: segments } = useQuery<TranscriptionSegment[]>({
+    queryKey: [`/api/transcriptions/${transcription.id}/segments`],
+    enabled: transcription.sourceType === "youtube" && transcription.status === "completed",
+  });
+
+  // Format time for display (MM:SS)
+  const formatTime = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Format segments or full text
   useEffect(() => {
-    if (transcription.text) {
+    if (segments && segments.length > 0) {
+      setFormattedText(
+        segments.map(segment => 
+          `[${formatTime(segment.startTime)}] ${segment.text}`
+        )
+      );
+    } else if (transcription.text) {
       setFormattedText(formatTranscriptionText(transcription.text));
     }
-  }, [transcription.text]);
+  }, [transcription.text, segments]);
 
   // Cycle through messages every 3 seconds during processing
   useEffect(() => {
@@ -148,9 +170,9 @@ export default function TranscriptionResult({ transcription }: TranscriptionResu
         ) : (
           <ScrollArea className="h-[400px]">
             <div className="prose prose-sm max-w-none space-y-4">
-              {formattedText.map((paragraph, index) => (
+              {formattedText.map((text, index) => (
                 <p key={index} className="leading-relaxed">
-                  {paragraph}
+                  {text}
                 </p>
               ))}
             </div>

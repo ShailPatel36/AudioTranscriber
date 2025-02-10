@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, primaryKey, numeric } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -45,10 +45,28 @@ export const transcriptions = pgTable("transcriptions", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const transcriptionsRelations = relations(transcriptions, ({ one }) => ({
+export const transcriptionSegments = pgTable("transcription_segments", {
+  id: serial("id").primaryKey(),
+  transcriptionId: integer("transcription_id").notNull().references(() => transcriptions.id, { onDelete: 'cascade' }),
+  text: text("text").notNull(),
+  startTime: integer("start_time").notNull(), // Time in milliseconds
+  endTime: integer("end_time").notNull(), // Time in milliseconds
+  confidence: numeric("confidence"), // Optional confidence score
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const transcriptionsRelations = relations(transcriptions, ({ one, many }) => ({
   user: one(users, {
     fields: [transcriptions.userId],
     references: [users.id],
+  }),
+  segments: many(transcriptionSegments),
+}));
+
+export const transcriptionSegmentsRelations = relations(transcriptionSegments, ({ one }) => ({
+  transcription: one(transcriptions, {
+    fields: [transcriptionSegments.transcriptionId],
+    references: [transcriptions.id],
   }),
 }));
 
@@ -73,6 +91,9 @@ export const insertTranscriptionSchema = createInsertSchema(transcriptions)
     status: z.enum(["processing", "completed", "failed"]),
   });
 
+export const insertTranscriptionSegmentSchema = createInsertSchema(transcriptionSegments)
+  .omit({ id: true, createdAt: true });
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -82,3 +103,6 @@ export type InsertTranscriptionSettings = z.infer<typeof insertTranscriptionSett
 
 export type Transcription = typeof transcriptions.$inferSelect;
 export type InsertTranscription = z.infer<typeof insertTranscriptionSchema>;
+
+export type TranscriptionSegment = typeof transcriptionSegments.$inferSelect;
+export type InsertTranscriptionSegment = z.infer<typeof insertTranscriptionSegmentSchema>;

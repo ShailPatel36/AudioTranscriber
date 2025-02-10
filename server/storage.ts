@@ -4,6 +4,7 @@ import connectPg from "connect-pg-simple";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { pool } from "./db";
+import { transcriptionSegments, type InsertTranscriptionSegment, type TranscriptionSegment } from "@shared/schema";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -19,6 +20,10 @@ export interface IStorage {
   // New methods for transcription settings
   getTranscriptionSettings(userId: number): Promise<TranscriptionSettings | undefined>;
   updateTranscriptionSettings(userId: number, settings: Partial<InsertTranscriptionSettings>): Promise<TranscriptionSettings>;
+
+  // Add to IStorage interface
+  createTranscriptionSegment(segment: InsertTranscriptionSegment): Promise<TranscriptionSegment>;
+  getTranscriptionSegments(transcriptionId: number): Promise<TranscriptionSegment[]>;
 
   sessionStore: session.SessionStore;
 }
@@ -103,6 +108,23 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return created;
+  }
+
+  // Add to DatabaseStorage class
+  async createTranscriptionSegment(insertSegment: InsertTranscriptionSegment): Promise<TranscriptionSegment> {
+    const [segment] = await db
+      .insert(transcriptionSegments)
+      .values(insertSegment)
+      .returning();
+    return segment;
+  }
+
+  async getTranscriptionSegments(transcriptionId: number): Promise<TranscriptionSegment[]> {
+    return await db
+      .select()
+      .from(transcriptionSegments)
+      .where(eq(transcriptionSegments.transcriptionId, transcriptionId))
+      .orderBy(transcriptionSegments.startTime);
   }
 }
 

@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import multer from "multer";
 import { insertTranscriptionSchema } from "@shared/schema";
 import { TranscriptionProviderFactory } from "./transcription/provider-factory";
+import { YouTubeService } from "./transcription/youtube-service";
 
 // Configure multer for memory storage
 const upload = multer({
@@ -124,9 +125,23 @@ export function registerRoutes(app: Express): Server {
       const { url } = req.body;
       if (!url) return res.status(400).json({ message: "No URL provided" });
 
+      // Validate YouTube URL
+      if (!YouTubeService.isValidUrl(url)) {
+        return res.status(400).json({ message: "Invalid YouTube URL" });
+      }
+
       const settings = await storage.getTranscriptionSettings(req.user!.id);
       const provider = settings?.provider || "openai";
 
+      // Verify API key is set
+      const apiKey = provider === "openai" ? settings?.openaiKey : settings?.assemblyaiKey;
+      if (!apiKey && provider !== "commonvoice") {
+        return res.status(400).json({ 
+          message: `API key for ${provider} is not set. Please configure it in settings.` 
+        });
+      }
+
+      // Create initial transcription record
       const transcription = await storage.createTranscription({
         userId: req.user!.id,
         sourceType: "youtube",
@@ -137,28 +152,59 @@ export function registerRoutes(app: Express): Server {
         provider,
       });
 
-      // Simulate YouTube transcription (you would need to implement actual YouTube processing)
-      setTimeout(async () => {
+      // Process transcription in the background
+      (async () => {
         try {
+          console.log(`Starting YouTube transcription: ${url}`);
+
+          const youtubeService = new YouTubeService();
+          const { buffer, videoTitle } = await youtubeService.downloadAndExtractAudio(url);
+
+          console.log("Audio extracted, initializing transcription provider...");
+
+          const transcriptionProvider = TranscriptionProviderFactory.getProvider({
+            provider,
+            apiKey,
+          });
+
+          console.log("Starting transcription process...");
+
+          const text = await transcriptionProvider.transcribe(buffer, videoTitle);
+
+          // Split text into segments (temporary implementation)
+          const segments = text.split(/[.!?]+\s+/).map((segment, index) => ({
+            transcriptionId: transcription.id,
+            text: segment.trim(),
+            startTime: index * 4000, // Approximate 4 seconds per segment
+            endTime: (index + 1) * 4000,
+            confidence: 1.0,
+          }));
+
+          // Store segments
+          await Promise.all(
+            segments.map(segment => storage.createTranscriptionSegment(segment))
+          );
+
+          // Update transcription status
           await storage.updateTranscription(transcription.id, {
             status: "completed",
-            text: `Transcription of YouTube video: ${url}\n\n` +
-                 `This is a simulated transcription. In production, this would download ` +
-                 `the audio from YouTube and process it with the ${provider} provider.`,
+            text,
           });
-        } catch (error) {
-          console.error("Failed to update transcription:", error);
+
+          console.log(`YouTube transcription ${transcription.id} completed and saved`);
+        } catch (error: any) {
+          console.error("Failed to process YouTube transcription:", error);
           await storage.updateTranscription(transcription.id, {
             status: "failed",
-            text: null,
+            text: `Error: ${error.message}`,
           });
         }
-      }, 5000);
+      })();
 
       res.json(transcription);
-    } catch (error) {
+    } catch (error: any) {
       console.error("YouTube transcription error:", error);
-      res.status(500).json({ message: "Failed to process YouTube URL" });
+      res.status(500).json({ message: error.message || "Failed to process YouTube URL" });
     }
   });
 
@@ -170,6 +216,24 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Failed to fetch transcriptions:", error);
       res.status(500).json({ message: "Failed to fetch transcriptions" });
+    }
+  });
+
+  // Add new endpoint for fetching segments
+  app.get("/api/transcriptions/:id/segments", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
+
+      const transcriptionId = parseInt(req.params.id);
+      if (isNaN(transcriptionId)) {
+        return res.status(400).json({ message: "Invalid transcription ID" });
+      }
+
+      const segments = await storage.getTranscriptionSegments(transcriptionId);
+      res.json(segments);
+    } catch (error) {
+      console.error("Failed to fetch transcription segments:", error);
+      res.status(500).json({ message: "Failed to fetch segments" });
     }
   });
 
