@@ -18,6 +18,7 @@ export default function Dashboard() {
   const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
     refetchInterval: (data) => {
+      // Poll every 2 seconds if there are processing transcriptions
       if (!Array.isArray(data)) return false;
       return data.some((t) => t.status === "processing") ? 2000 : false;
     },

@@ -48,6 +48,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Update the file upload endpoint
   app.post("/api/transcribe/file", upload.single("file"), async (req: Request, res) => {
     try {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "Not authenticated" });
@@ -73,7 +74,7 @@ export function registerRoutes(app: Express): Server {
         sourceType: "file",
         fileName: req.file.originalname,
         status: "processing",
-        text: null,
+        text: "Starting transcription process...",
         sourceUrl: null,
         provider,
       });
@@ -88,18 +89,42 @@ export function registerRoutes(app: Express): Server {
             apiKey,
           });
 
-          console.log("Transcription provider initialized, starting transcription...");
+          // Update status before starting transcription
+          await storage.updateTranscription(transcription.id, {
+            text: "Transcribing audio...",
+          });
 
           const text = await transcriptionProvider.transcribe(
             req.file!.buffer,
             req.file!.originalname
           );
 
-          console.log("Transcription completed successfully, updating database...");
+          // Split text into segments for progress updates
+          const segments = text.split(/[.!?]+\s+/)
+            .filter(segment => segment.trim().length > 0);
 
+          // Process segments in batches and show progress
+          const batchSize = 5;
+          let processedText = "";
+
+          for (let i = 0; i < segments.length; i += batchSize) {
+            const batch = segments.slice(i, i + batchSize);
+            processedText += batch.join(" ") + " ";
+            const progress = Math.round(((i + batch.length) / segments.length) * 100);
+
+            await storage.updateTranscription(transcription.id, {
+              text: processedText,
+              status: "processing",
+            });
+
+            // Small delay to prevent database overload
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+
+          // Final update
           await storage.updateTranscription(transcription.id, {
             status: "completed",
-            text,
+            text: processedText.trim(),
           });
 
           console.log(`Transcription ${transcription.id} completed and saved`);
@@ -147,7 +172,7 @@ export function registerRoutes(app: Express): Server {
         sourceType: "youtube",
         sourceUrl: url,
         status: "processing",
-        text: null,
+        text: "Downloading YouTube video...",
         fileName: null,
         provider,
       });
@@ -157,38 +182,67 @@ export function registerRoutes(app: Express): Server {
         try {
           console.log(`Starting YouTube transcription: ${url}`);
 
+          // Update status for download
+          await storage.updateTranscription(transcription.id, {
+            text: "Downloading and extracting audio...",
+          });
+
           const youtubeService = new YouTubeService();
           const { buffer, videoTitle } = await youtubeService.downloadAndExtractAudio(url);
 
-          console.log("Audio extracted, initializing transcription provider...");
+          // Update status for transcription start
+          await storage.updateTranscription(transcription.id, {
+            text: "Audio extracted. Starting transcription...",
+          });
 
           const transcriptionProvider = TranscriptionProviderFactory.getProvider({
             provider,
             apiKey,
           });
 
-          console.log("Starting transcription process...");
-
+          // Get the full transcription
           const text = await transcriptionProvider.transcribe(buffer, videoTitle);
 
-          // Split text into segments (temporary implementation)
-          const segments = text.split(/[.!?]+\s+/).map((segment, index) => ({
-            transcriptionId: transcription.id,
-            text: segment.trim(),
-            startTime: index * 4000, // Approximate 4 seconds per segment
-            endTime: (index + 1) * 4000,
-            confidence: 1.0,
-          }));
+          // Split text into segments and process in batches
+          const segments = text.split(/[.!?]+\s+/)
+            .filter(segment => segment.trim().length > 0)
+            .map((segment, index) => ({
+              transcriptionId: transcription.id,
+              text: segment.trim(),
+              startTime: index * 4000,
+              endTime: (index + 1) * 4000,
+              confidence: 1.0,
+            }));
 
-          // Store segments
-          await Promise.all(
-            segments.map(segment => storage.createTranscriptionSegment(segment))
-          );
+          // Process segments in batches of 5 and update progress
+          const batchSize = 5;
+          let processedText = "";
 
-          // Update transcription status
+          for (let i = 0; i < segments.length; i += batchSize) {
+            const batch = segments.slice(i, i + batchSize);
+
+            // Store batch segments
+            await Promise.all(
+              batch.map(segment => storage.createTranscriptionSegment(segment))
+            );
+
+            // Update transcription text with progress
+            processedText += batch.map(s => s.text).join(" ") + " ";
+            const progress = Math.round(((i + batch.length) / segments.length) * 100);
+
+            await storage.updateTranscription(transcription.id, {
+              text: processedText,
+              status: "processing",
+            });
+
+            // Small delay to prevent database overload
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+
+          // Final update with completed status
           await storage.updateTranscription(transcription.id, {
             status: "completed",
-            text,
+            text: processedText.trim(),
           });
 
           console.log(`YouTube transcription ${transcription.id} completed and saved`);
