@@ -6,6 +6,7 @@ import UploadForm from "@/components/upload-form";
 import TranscriptionHistory from "@/components/transcription-history";
 import TranscriptionResult from "@/components/transcription-result";
 import ProviderSettings from "@/components/provider-settings";
+import QuickHelpModal from "@/components/quick-help-modal";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -13,10 +14,10 @@ export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
   const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
 
-const { data: transcriptions = [] } = useQuery<Transcription[]>({
+  const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
     refetchInterval: (data) => {
-      if (!Array.isArraydata) return false;
+      if (!Array.isArray(data)) return false;
       return data.some((t) => t.status === "processing") ? 2000 : false;
     },
   });
@@ -30,6 +31,7 @@ const { data: transcriptions = [] } = useQuery<Transcription[]>({
             <span className="text-muted-foreground">
               Welcome, {user?.username}
             </span>
+            <QuickHelpModal />
             <Button
               variant="outline"
               onClick={() => logoutMutation.mutate()}
