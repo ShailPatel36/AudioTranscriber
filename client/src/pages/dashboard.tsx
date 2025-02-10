@@ -9,6 +9,7 @@ import ProviderSettings from "@/components/provider-settings";
 import QuickHelpModal from "@/components/quick-help-modal";
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Mic, Settings, History, LogOut, Wand2 } from "lucide-react";
 
 export default function Dashboard() {
   const { user, logoutMutation } = useAuth();
@@ -18,18 +19,14 @@ export default function Dashboard() {
   const { data: transcriptions = [] } = useQuery<Transcription[]>({
     queryKey: ["/api/transcriptions"],
     refetchInterval: (data) => {
-      // Poll every 2 seconds if there are processing transcriptions
-      if (!Array.isArray(data)) return false;
-      return data.some((t) => t.status === "processing") ? 2000 : false;
+      return Array.isArray(data) && data.some((t) => t.status === "processing") ? 2000 : false;
     },
   });
 
-  // Sort transcriptions by creation date (newest first)
   const sortedTranscriptions = [...transcriptions].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  // Update current transcription when a new one is added
   useEffect(() => {
     if (sortedTranscriptions.length > 0) {
       const newest = sortedTranscriptions[0];
@@ -42,20 +39,30 @@ export default function Dashboard() {
   }, [sortedTranscriptions]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+      {/* Header with glass effect */}
+      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Transcriber</h1>
+          <div className="flex items-center space-x-2">
+            <Mic className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
+              Transcriber Pro
+            </h1>
+          </div>
           <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">
-              Welcome, {user?.username}
+            <span className="text-muted-foreground flex items-center">
+              <Wand2 className="w-4 h-4 mr-2" />
+              {user?.username}
             </span>
             <QuickHelpModal />
             <Button
               variant="outline"
+              size="sm"
               onClick={() => logoutMutation.mutate()}
               disabled={logoutMutation.isPending}
+              className="flex items-center gap-2"
             >
+              <LogOut className="w-4 h-4" />
               Logout
             </Button>
           </div>
@@ -63,44 +70,68 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <div className="mb-12 text-center">
+          <h2 className="text-4xl font-bold mb-4">Transform Speech to Text</h2>
+          <p className="text-muted-foreground text-lg mb-8">
+            Upload audio files or paste YouTube links for instant, accurate transcriptions
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <Tabs defaultValue="upload">
-              <TabsList>
-                <TabsTrigger value="upload">Upload</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
-              <TabsContent value="upload">
-                <UploadForm />
-              </TabsContent>
-              <TabsContent value="settings">
-                <ProviderSettings />
-              </TabsContent>
-            </Tabs>
+            <div className="bg-card rounded-lg shadow-lg border p-6">
+              <Tabs defaultValue="upload" className="space-y-6">
+                <TabsList className="grid grid-cols-2 gap-4 bg-muted p-1">
+                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                    <Mic className="w-4 h-4" />
+                    Upload
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="upload" className="space-y-4">
+                  <UploadForm />
+                </TabsContent>
+                <TabsContent value="settings">
+                  <ProviderSettings />
+                </TabsContent>
+              </Tabs>
+            </div>
 
-            {/* Show current transcription */}
+            {/* Current Transcription */}
             {currentTranscription && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Current Transcription</h2>
+              <div className="bg-card rounded-lg shadow-lg border p-6 space-y-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <History className="w-5 h-5 text-primary" />
+                  Current Transcription
+                </h2>
                 <TranscriptionResult transcription={currentTranscription} />
               </div>
             )}
 
-            {/* Show selected transcription if different from current */}
+            {/* Selected Transcription */}
             {selectedTranscription && selectedTranscription.id !== currentTranscription?.id && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold">Selected Transcription</h2>
+              <div className="bg-card rounded-lg shadow-lg border p-6 space-y-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <History className="w-5 h-5 text-primary" />
+                  Selected Transcription
+                </h2>
                 <TranscriptionResult transcription={selectedTranscription} />
               </div>
             )}
           </div>
 
           <div className="lg:col-span-1">
-            <TranscriptionHistory
-              transcriptions={sortedTranscriptions}
-              onSelect={setSelectedTranscription}
-              selectedId={selectedTranscription?.id}
-            />
+            <div className="bg-card rounded-lg shadow-lg border p-6">
+              <TranscriptionHistory
+                transcriptions={sortedTranscriptions}
+                onSelect={setSelectedTranscription}
+                selectedId={selectedTranscription?.id}
+              />
+            </div>
           </div>
         </div>
       </main>
