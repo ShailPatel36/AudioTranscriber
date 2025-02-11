@@ -63,48 +63,10 @@ npm run dev
 npm run dev
 ```
 
-Tech Stack 💻
-Frontend:
-
-React + TypeScript
-
-Vite
-
-Tailwind CSS
-
-Shadcn UI Components
-
-TanStack Query
-
-Backend:
-
-Node.js + Express
-
-Drizzle ORM
-
-PostgreSQL
-
-Local File Storage
-
-AI Providers:
-
-AssemblyAI
-
-OpenAI Whisper
-
-Mozilla Common Voice
-
-Other Tools:
-
-Zod for schema validation
-
-Framer Motion for animations
-
-React Hook Form
 
 Contributing 🤝
 Contributions are welcome! Please follow these steps:
-
+```
 Fork the repository
 
 Create your feature branch (git checkout -b feature/AmazingFeature)
@@ -114,6 +76,7 @@ Commit your changes (git commit -m 'Add some AmazingFeature')
 Push to the branch (git push origin feature/AmazingFeature)
 
 Open a Pull Request
+```
 
 License 📄
 Distributed under the MIT License. See LICENSE for more information.
