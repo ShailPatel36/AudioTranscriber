@@ -8,9 +8,6 @@
 
 A full-stack audio transcription application that supports multiple AI providers, offering seamless conversion of audio/video files to text with history tracking and export capabilities.
 
-![Transcriber Pro Screenshot]("C:\Users\s_pat\OneDrive\Pictures\Screenshots\Screenshot 2025-02-11 134654.png")
-("C:\Users\s_pat\OneDrive\Pictures\Screenshots\Screenshot 2025-02-11 134743.png")
-
 
 ## Features ✨
 
