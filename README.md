@@ -8,7 +8,9 @@
 
 A full-stack audio transcription application that supports multiple AI providers, offering seamless conversion of audio/video files to text with history tracking and export capabilities.
 
-![Transcriber Pro Screenshot](https://via.placeholder.com/800x500.png?text=Transcriber+Pro+Screenshot)
+![Transcriber Pro Screenshot]("C:\Users\s_pat\OneDrive\Pictures\Screenshots\Screenshot 2025-02-11 134654.png")
+("C:\Users\s_pat\OneDrive\Pictures\Screenshots\Screenshot 2025-02-11 134743.png")
+
 
 ## Features ✨
 
@@ -64,8 +66,8 @@ npm run dev
 npm run dev
 ```
 
-##Tech Stack 💻
-#Frontend:
+Tech Stack 💻
+Frontend:
 
 React + TypeScript
 
@@ -77,7 +79,7 @@ Shadcn UI Components
 
 TanStack Query
 
-#Backend:
+Backend:
 
 Node.js + Express
 
@@ -87,7 +89,7 @@ PostgreSQL
 
 Local File Storage
 
-#AI Providers:
+AI Providers:
 
 AssemblyAI
 
@@ -95,7 +97,7 @@ OpenAI Whisper
 
 Mozilla Common Voice
 
-#Other Tools:
+Other Tools:
 
 Zod for schema validation
 
@@ -103,7 +105,7 @@ Framer Motion for animations
 
 React Hook Form
 
-##Contributing 🤝
+Contributing 🤝
 Contributions are welcome! Please follow these steps:
 
 Fork the repository
@@ -116,5 +118,5 @@ Push to the branch (git push origin feature/AmazingFeature)
 
 Open a Pull Request
 
-##License 📄
+License 📄
 Distributed under the MIT License. See LICENSE for more information.
