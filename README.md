@@ -36,33 +36,36 @@ cd client && npm install
 
 # Install server dependencies
 cd ../server && npm install
+```
+
 Configuration ⚙️
 Create .env files in both client and server directories:
 
-server/.env
-
-env
-Copy
+```server/.env
 DATABASE_URL="postgres://user:pass@localhost:5432/transcriber"
 SESSION_SECRET="your_session_secret"
 ASSEMBLYAI_API_KEY="your_assemblyai_key"
 OPENAI_API_KEY="your_openai_key"
 STORAGE_PATH="./uploads"
-client/.env
+```
 
-env
-Copy
+client/.env
+```env
 VITE_API_BASE_URL="http://localhost:3000/api"
+```
+
 Running the App ▶️
-bash
-Copy
+
+```bash
 # Start server (from server directory)
 npm run dev
 
 # Start client (from client directory)
 npm run dev
-Tech Stack 💻
-##Frontend:
+```
+
+##Tech Stack 💻
+#Frontend:
 
 React + TypeScript
 
@@ -74,7 +77,7 @@ Shadcn UI Components
 
 TanStack Query
 
-##Backend:
+#Backend:
 
 Node.js + Express
 
@@ -84,7 +87,7 @@ PostgreSQL
 
 Local File Storage
 
-##AI Providers:
+#AI Providers:
 
 AssemblyAI
 
@@ -92,7 +95,7 @@ OpenAI Whisper
 
 Mozilla Common Voice
 
-##Other Tools:
+#Other Tools:
 
 Zod for schema validation
 
@@ -100,7 +103,7 @@ Framer Motion for animations
 
 React Hook Form
 
-Contributing 🤝
+##Contributing 🤝
 Contributions are welcome! Please follow these steps:
 
 Fork the repository
@@ -113,5 +116,5 @@ Push to the branch (git push origin feature/AmazingFeature)
 
 Open a Pull Request
 
-License 📄
+##License 📄
 Distributed under the MIT License. See LICENSE for more information.
