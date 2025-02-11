@@ -62,7 +62,7 @@ npm run dev
 # Start client (from client directory)
 npm run dev
 Tech Stack 💻
-Frontend:
+##Frontend:
 
 React + TypeScript
 
@@ -74,7 +74,7 @@ Shadcn UI Components
 
 TanStack Query
 
-Backend:
+##Backend:
 
 Node.js + Express
 
@@ -84,7 +84,7 @@ PostgreSQL
 
 Local File Storage
 
-AI Providers:
+##AI Providers:
 
 AssemblyAI
 
@@ -92,7 +92,7 @@ OpenAI Whisper
 
 Mozilla Common Voice
 
-Other Tools:
+##Other Tools:
 
 Zod for schema validation
 
