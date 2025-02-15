@@ -118,7 +118,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return segment;
   }
-
+// Use of a async function 
   async getTranscriptionSegments(transcriptionId: number): Promise<TranscriptionSegment[]> {
     return await db
       .select()
