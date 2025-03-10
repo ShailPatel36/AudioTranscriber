@@ -1,4 +1,4 @@
-
+I
 # Transcriber Pro 🎙️
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Available-success)](https://transcribe-pro.replit.app/)
@@ -61,20 +61,5 @@ npm run dev
 
 # Start client (from client directory)
 npm run dev
-```
-
-
-Contributing 🤝
-Contributions are welcome! Please follow these steps:
-```
-Fork the repository
-
-Create your feature branch (git checkout -b feature/AmazingFeature)
-
-Commit your changes (git commit -m 'Add some AmazingFeature')
-
-Push to the branch (git push origin feature/AmazingFeature)
-
-Open a Pull Request
 ```
 
